@@ -1,0 +1,58 @@
+# Build Status
+
+## Read this first
+This file is the machine-readable human summary of what is already implemented in the repository.
+Update it whenever a milestone meaningfully changes status.
+
+## Current overall state
+- Repository planning exists.
+- GitHub issues and milestones exist.
+- Implementation status in code is currently unknown from the planning files alone.
+- Until code exists and this file is updated, treat all major subsystems below as `not_started`.
+
+## Status values
+- `not_started`
+- `in_progress`
+- `partial`
+- `complete`
+- `blocked`
+
+## Subsystem status
+| Subsystem | Status | Notes |
+|---|---|---|
+| Repo scaffold and Go module | not_started | Update when repository shape and module are committed. |
+| Docker Compose local stack | not_started | API, worker, Postgres, Redis. |
+| Config loader | not_started | Env parsing and validation. |
+| Structured logging | not_started | `slog`, request IDs, worker correlation fields. |
+| Database migrations | not_started | Base schema and seed path. |
+| Seed data | not_started | Demo tenant, source, API key, admin user. |
+| Health endpoints | not_started | `/livez`, `/readyz`. |
+| Ingestion API | not_started | `POST /v1/events`. |
+| Event validation | not_started | Batch and event-level validation, partial rejection. |
+| Idempotency | not_started | Request hashing, replay, `409 Conflict`. |
+| Ingestion persistence | not_started | `ingestion_requests`, `events`, `rejected_events`. |
+| Raw event reads | not_started | `GET /v1/events`, `GET /v1/events/{id}`. |
+| Jobs table and repositories | not_started | Claiming and status transitions. |
+| Worker loop | not_started | Long-lived poll/claim/process/shutdown path. |
+| Retry and dead-letter handling | not_started | Backoff, DLQ persistence, retry endpoint. |
+| Enrichment pipeline | not_started | Allowlisted dimensions only. |
+| Aggregate buckets | not_started | Retry-safe upsert logic. |
+| Analytics endpoints | not_started | Top events, timeseries, breakdown. |
+| Tenant admin APIs | not_started | API keys, sources, usage. |
+| Tenant isolation and RBAC | not_started | Query scoping and permissions. |
+| Rate limiting | not_started | Tenant/API key token bucket. |
+| Redis caching | not_started | Analytics only, short TTLs. |
+| Metrics | not_started | Prometheus counters/histograms. |
+| Tracing | not_started | OTEL spans for ingest, jobs, analytics. |
+| pprof | not_started | Protected or non-prod only. |
+| Load generator | not_started | Basic steady-state and burst scenarios. |
+| Benchmarks and perf reports | not_started | pprof, EXPLAIN, bottlenecks. |
+| Demo flow | not_started | `/demo`, status, replay sample. |
+| Deployment | not_started | Public demo deployment and docs. |
+| README and docs polish | not_started | Architecture, benchmark report, runbook. |
+
+## Update rules
+When updating this file:
+- prefer `partial` over `complete` unless the acceptance criteria are fully met
+- add a short note for gaps, shortcuts, or known missing pieces
+- do not mark performance or reliability features complete without evidence
