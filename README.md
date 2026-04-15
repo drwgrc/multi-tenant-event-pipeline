@@ -128,9 +128,10 @@ The worker boot path now includes a process-level `worker_id` field on startup a
 Run the current schema migrations from the repository root:
 
 ```bash
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
 make migrate
 ```
+
+`make migrate` defaults to the local Docker Compose Postgres URL (`postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable`). Override `DATABASE_URL` when you need a different target.
 
 `make migrate` defaults to `up`. To inspect or roll back the current migration state, pass a command through to the runner:
 
@@ -165,9 +166,10 @@ For deploy environments, run the same `go run ./cmd/migrate up` command as a rel
 After migrations are applied, seed the local demo records from the repository root:
 
 ```bash
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
 make seed
 ```
+
+`make seed` defaults to the same local Postgres URL as `make migrate`. Override `DATABASE_URL` when seeding a different database.
 
 The seed flow is deterministic and rerunnable. It upserts the same local-only records each time:
 
