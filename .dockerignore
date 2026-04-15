@@ -1,0 +1,6 @@
+.git
+.codex
+bin
+dist
+tmp
+coverage.out
