@@ -1,2 +1,20 @@
 # Agent-specific files
 .codex/
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
+
+# Environment overrides
+.env
+.env.*
+
+# Go build artifacts
+bin/
+dist/
+coverage.out
+*.test
+
+# Local runtime state
+tmp/

@@ -7,8 +7,8 @@ Update it whenever a milestone meaningfully changes status.
 ## Current overall state
 - Repository planning exists.
 - GitHub issues and milestones exist.
-- Implementation status in code is currently unknown from the planning files alone.
-- Until code exists and this file is updated, treat all major subsystems below as `not_started`.
+- Bootstrap repository foundation is implemented.
+- Remaining major subsystems are still mostly `not_started` or placeholder-only until later tickets land.
 
 ## Status values
 - `not_started`
@@ -20,13 +20,13 @@ Update it whenever a milestone meaningfully changes status.
 ## Subsystem status
 | Subsystem | Status | Notes |
 |---|---|---|
-| Repo scaffold and Go module | not_started | Update when repository shape and module are committed. |
-| Docker Compose local stack | not_started | API, worker, Postgres, Redis. |
+| Repo scaffold and Go module | complete | Go module, Makefile bootstrap commands, and repository scaffold are committed. |
+| Docker Compose local stack | partial | Bootstrap compose wiring exists for API, worker, Postgres, and Redis; service internals are still placeholders. |
 | Config loader | not_started | Env parsing and validation. |
 | Structured logging | not_started | `slog`, request IDs, worker correlation fields. |
 | Database migrations | not_started | Base schema and seed path. |
 | Seed data | not_started | Demo tenant, source, API key, admin user. |
-| Health endpoints | not_started | `/livez`, `/readyz`. |
+| Health endpoints | partial | Bootstrap `/livez` exists in `cmd/api`; `/readyz` and dependency checks are pending. |
 | Ingestion API | not_started | `POST /v1/events`. |
 | Event validation | not_started | Batch and event-level validation, partial rejection. |
 | Idempotency | not_started | Request hashing, replay, `409 Conflict`. |
@@ -45,11 +45,11 @@ Update it whenever a milestone meaningfully changes status.
 | Metrics | not_started | Prometheus counters/histograms. |
 | Tracing | not_started | OTEL spans for ingest, jobs, analytics. |
 | pprof | not_started | Protected or non-prod only. |
-| Load generator | not_started | Basic steady-state and burst scenarios. |
+| Load generator | partial | `cmd/loadgen` scaffold exists; no traffic generation scenarios yet. |
 | Benchmarks and perf reports | not_started | pprof, EXPLAIN, bottlenecks. |
 | Demo flow | not_started | `/demo`, status, replay sample. |
 | Deployment | not_started | Public demo deployment and docs. |
-| README and docs polish | not_started | Architecture, benchmark report, runbook. |
+| README and docs polish | partial | Bootstrap README exists; architecture, benchmark, and runbook content are still pending. |
 
 ## Update rules
 When updating this file:

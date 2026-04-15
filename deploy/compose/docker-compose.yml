@@ -1,14 +1,16 @@
-version: "3.9"
-
 services:
   api:
-    build: .
+    build:
+      context: ../..
+      dockerfile: deploy/compose/Dockerfile
     command: go run ./cmd/api
     ports:
       - "8080:8080"
 
   worker:
-    build: .
+    build:
+      context: ../..
+      dockerfile: deploy/compose/Dockerfile
     command: go run ./cmd/worker
 
   postgres:
