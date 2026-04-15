@@ -29,9 +29,12 @@ type sqlChecker struct {
 }
 
 type redisChecker struct {
-	network string
-	address string
-	tls     bool
+	network     string
+	address     string
+	tls         bool
+	username    string
+	password    string
+	hasPassword bool
 }
 
 type componentStatus struct {
@@ -109,6 +112,10 @@ func NewRedisChecker(rawURL string) (Checker, error) {
 		address: parsed.Host,
 		tls:     parsed.Scheme == "rediss",
 	}
+	if parsed.User != nil {
+		checker.username = parsed.User.Username()
+		checker.password, checker.hasPassword = parsed.User.Password()
+	}
 
 	return checker, nil
 }
@@ -147,20 +154,74 @@ func (c redisChecker) Check(ctx context.Context) error {
 		}
 	}
 
-	if _, err := conn.Write([]byte("*1\r\n$4\r\nPING\r\n")); err != nil {
+	if err := c.writeAUTH(conn); err != nil {
+		return err
+	}
+
+	if err := writeRedisCommand(conn, "PING"); err != nil {
 		return fmt.Errorf("ping redis: %w", err)
 	}
 
-	line, err := bufio.NewReader(conn).ReadString('\n')
+	line, err := readRedisLine(conn)
 	if err != nil {
 		return fmt.Errorf("ping redis: %w", err)
 	}
 
-	if strings.TrimSpace(line) != "+PONG" {
-		return fmt.Errorf("ping redis: unexpected response %q", strings.TrimSpace(line))
+	if line != "+PONG" {
+		return fmt.Errorf("ping redis: unexpected response %q", line)
 	}
 
 	return nil
+}
+
+func (c redisChecker) writeAUTH(conn net.Conn) error {
+	if !c.hasPassword {
+		return nil
+	}
+
+	args := []string{"AUTH"}
+	if c.username != "" {
+		args = append(args, c.username)
+	}
+	args = append(args, c.password)
+
+	if err := writeRedisCommand(conn, args...); err != nil {
+		return fmt.Errorf("auth redis: %w", err)
+	}
+
+	line, err := readRedisLine(conn)
+	if err != nil {
+		return fmt.Errorf("auth redis: %w", err)
+	}
+
+	if line != "+OK" {
+		return fmt.Errorf("auth redis: unexpected response %q", line)
+	}
+
+	return nil
+}
+
+func writeRedisCommand(conn net.Conn, args ...string) error {
+	var builder strings.Builder
+	fmt.Fprintf(&builder, "*%d\r\n", len(args))
+	for _, arg := range args {
+		fmt.Fprintf(&builder, "$%d\r\n%s\r\n", len(arg), arg)
+	}
+
+	if _, err := conn.Write([]byte(builder.String())); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func readRedisLine(conn net.Conn) (string, error) {
+	line, err := bufio.NewReader(conn).ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(line), nil
 }
 
 func writeJSON(w http.ResponseWriter, statusCode int, body any) {
