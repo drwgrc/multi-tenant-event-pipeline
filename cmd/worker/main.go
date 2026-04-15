@@ -1,20 +1,26 @@
 package main
 
 import (
-	"log"
+	"log/slog"
+	"os"
 	"time"
 
 	"github.com/drwgrc/multi-tenant-event-pipeline/internal/config"
+	"github.com/drwgrc/multi-tenant-event-pipeline/internal/observability"
 )
 
 func main() {
+	workerID := observability.NewCorrelationID()
+	logger := observability.NewLogger("worker").With(observability.WorkerIDAttr(workerID))
+
 	if _, err := config.LoadWorker(); err != nil {
-		log.Fatalf("load worker config: %v", err)
+		logger.Error("load worker config", slog.Any("error", err))
+		os.Exit(1)
 	}
 
-	log.Println("worker started")
+	logger.Info("worker started")
 	for {
-		log.Println("worker tick")
+		logger.Info("worker tick")
 		time.Sleep(5 * time.Second)
 	}
 }

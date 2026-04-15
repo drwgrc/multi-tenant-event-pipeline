@@ -108,6 +108,19 @@ Development defaults:
 
 Invalid or missing configuration causes the binary to exit before serving traffic.
 
+## Logging and request correlation
+
+The bootstrap API and worker now emit structured JSON logs via Go's standard-library `slog` package. Each log line includes a `service` field so API and worker output can be separated easily in Compose or aggregated logs.
+
+The API wraps every request with request correlation middleware:
+
+- incoming `X-Request-ID` is preserved when provided
+- otherwise the API generates a new opaque request ID
+- the resolved request ID is echoed back in the response header
+- request completion logs include `request_id`, `method`, `path`, `status`, `remote_addr`, and `duration_ms`
+
+The worker boot path now includes a process-level `worker_id` field on startup and heartbeat logs so later job-processing code can reuse the same correlation field.
+
 `make migrate` and `make seed` are placeholder commands that fail intentionally until the migration and seed tickets are implemented.
 
 ## Roadmap references
