@@ -25,7 +25,7 @@ Update it whenever a milestone meaningfully changes status.
 | Config loader | complete | Shared startup config parsing and validation now power `cmd/api` and `cmd/worker`; `REDIS_ADDR` remains a temporary fallback alias behind canonical `REDIS_URL`. |
 | Structured logging | complete | API and worker now emit JSON `slog` logs; API propagates `X-Request-ID` and worker logs include `worker_id` correlation. |
 | Database migrations | complete | Repo-native migration runner exists and the initial tenants/users/memberships/api_keys/sources schema is committed; later milestones still add jobs, aggregates, and other tables. |
-| Seed data | not_started | Demo tenant, source, API key, admin user. |
+| Seed data | complete | `make seed` now upserts a deterministic demo tenant, admin user, membership, source, and hashed API key, and prints the raw local-only API key once per seed run. |
 | Health endpoints | partial | Bootstrap `/livez` exists in `cmd/api`; `/readyz` and dependency checks are pending. |
 | Ingestion API | not_started | `POST /v1/events`. |
 | Event validation | not_started | Batch and event-level validation, partial rejection. |

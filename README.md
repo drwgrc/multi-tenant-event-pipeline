@@ -4,7 +4,7 @@ Bootstrap repository for a Go backend that ingests tenant-scoped event batches, 
 
 ## Current state
 
-This repository currently contains the bootstrap scaffold from Issue `#2`, the local infrastructure stack from Issue `#3`, and the initial tenancy/auth schema work from Issue `#6`:
+This repository currently contains the bootstrap scaffold from Issue `#2`, the local infrastructure stack from Issue `#3`, the initial tenancy/auth schema work from Issue `#6`, and deterministic bootstrap seed data from Issue `#7`:
 
 - Go module initialization
 - command entrypoints for `api`, `worker`, and `loadgen`
@@ -12,8 +12,9 @@ This repository currently contains the bootstrap scaffold from Issue `#2`, the l
 - local Docker Compose stack for API, worker, Postgres, and Redis
 - migration runner plus initial `tenants`, `users`, `memberships`, `api_keys`, and `sources` schema
 - bootstrap developer commands in `Makefile`
+- deterministic local seed flow for one demo tenant, admin user, source, and API key
 
-The ingestion pipeline, seed data, readiness checks, and business logic are tracked in later tickets and are not implemented yet.
+The ingestion pipeline, readiness checks, and business logic are tracked in later tickets and are not implemented yet.
 
 ## Repository layout
 
@@ -159,7 +160,28 @@ make migrate
 
 For deploy environments, run the same `go run ./cmd/migrate up` command as a release step before starting or updating the API and worker processes. The container build now includes the migration files so the same command can be executed from the built artifact as long as `DATABASE_URL` is set.
 
-`make seed` is still a placeholder command until the seed-data ticket is implemented.
+## Seed data
+
+After migrations are applied, seed the local demo records from the repository root:
+
+```bash
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
+make seed
+```
+
+The seed flow is deterministic and rerunnable. It upserts the same local-only records each time:
+
+- tenant slug: `demo`
+- tenant name: `Demo Tenant`
+- admin email: `admin@demo.local`
+- admin password: `demo-admin-password`
+- membership role: `admin`
+- source name: `demo-web`
+- API key name: `demo-ingest`
+
+`make seed` prints the raw seeded API key once during the run. The database stores only the API key hash plus the prefix (`evt_demo_loc`), not the raw secret.
+
+This bootstrap data exists so later tickets can implement `POST /v1/auth/login` and ingestion against a real tenant without adding ad hoc setup steps. There is still no login or ingestion API in the repository yet.
 
 ## Roadmap references
 
