@@ -131,7 +131,7 @@ Run the current schema migrations from the repository root:
 make migrate
 ```
 
-`make migrate` defaults to the local Docker Compose Postgres URL (`postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable`). Override `DATABASE_URL` when you need a different target.
+`make migrate` runs inside the Compose network, so it uses the container-local database URL (`postgres://postgres:postgres@postgres:5432/event_pipeline?sslmode=disable`) instead of a host `localhost` connection.
 
 `make migrate` defaults to `up`. To inspect or roll back the current migration state, pass a command through to the runner:
 
@@ -150,12 +150,9 @@ The migration runner reads:
 
 The CLI accepts only a single optional command argument (`up`, `down`, or `version`). Extra positional arguments such as `./scripts/migrate.sh down 1` are rejected rather than treated as a step rollback.
 
-For local development with Docker Compose, start Postgres first and then run migrations against `localhost:5432` from the repo checkout:
+For local development, `make migrate` is the default path. It runs as a one-off container against the Compose Postgres service:
 
 ```bash
-docker compose -f deploy/compose/docker-compose.yml up -d postgres
-
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
 make migrate
 ```
 
@@ -169,7 +166,7 @@ After migrations are applied, seed the local demo records from the repository ro
 make seed
 ```
 
-`make seed` defaults to the same local Postgres URL as `make migrate`. Override `DATABASE_URL` when seeding a different database.
+`make seed` also runs as a one-off Compose container, so it talks to Postgres over the Docker network instead of relying on a host-installed or host-routed database connection.
 
 The seed flow is deterministic and rerunnable. It upserts the same local-only records each time:
 

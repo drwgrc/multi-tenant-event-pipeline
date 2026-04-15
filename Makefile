@@ -1,8 +1,5 @@
 SHELL := /bin/sh
 COMPOSE_FILE := deploy/compose/docker-compose.yml
-DATABASE_URL ?= postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable
-
-export DATABASE_URL
 
 .PHONY: up down run run-api run-worker run-loadgen migrate seed test
 
@@ -26,10 +23,10 @@ run-loadgen:
 	go run ./cmd/loadgen
 
 migrate:
-	./scripts/migrate.sh
+	docker compose -f $(COMPOSE_FILE) run --rm api go run ./cmd/migrate
 
 seed:
-	./scripts/seed.sh
+	docker compose -f $(COMPOSE_FILE) run --rm api go run ./cmd/seed
 
 test:
 	go test ./...
