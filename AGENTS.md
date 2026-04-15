@@ -10,7 +10,7 @@ The primary source documents for this repository are:
 - `docs/PROJECT_SCOPE.md` — condensed system goals, architecture, and constraints.
 - `docs/BUILD_STATUS.md` — current implementation status. Treat this as the source of truth for what is already built.
 - `docs/DELIVERY_PLAN.md` — milestone-by-milestone backlog summary derived from the imported GitHub issues.
-- `signalforge_prd_updated.md` — original long-form PRD.
+- `PRD.md` — original long-form PRD.
 - `import.json` — imported GitHub issue dataset.
 
 ## What to assume
