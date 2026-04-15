@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+const defaultRedisPort = "6379"
+
 type Checker interface {
 	Check(context.Context) error
 }
@@ -107,9 +109,19 @@ func NewRedisChecker(rawURL string) (Checker, error) {
 		return nil, fmt.Errorf("parse redis url: missing host")
 	}
 
+	host := parsed.Hostname()
+	if host == "" {
+		return nil, fmt.Errorf("parse redis url: missing host")
+	}
+
+	port := parsed.Port()
+	if port == "" {
+		port = defaultRedisPort
+	}
+
 	checker := redisChecker{
 		network: "tcp",
-		address: parsed.Host,
+		address: net.JoinHostPort(host, port),
 		tls:     parsed.Scheme == "rediss",
 	}
 	if parsed.User != nil {

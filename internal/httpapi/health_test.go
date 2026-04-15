@@ -15,6 +15,22 @@ import (
 	"time"
 )
 
+func TestNewRedisCheckerDefaultsMissingPort(t *testing.T) {
+	checker, err := NewRedisChecker("redis://redis")
+	if err != nil {
+		t.Fatalf("NewRedisChecker() error = %v", err)
+	}
+
+	redisChecker, ok := checker.(redisChecker)
+	if !ok {
+		t.Fatalf("checker type = %T, want redisChecker", checker)
+	}
+
+	if redisChecker.address != net.JoinHostPort("redis", defaultRedisPort) {
+		t.Fatalf("address = %q, want %q", redisChecker.address, net.JoinHostPort("redis", defaultRedisPort))
+	}
+}
+
 func TestLivenessHandlerReportsOK(t *testing.T) {
 	handler := NewLivenessHandler()
 
