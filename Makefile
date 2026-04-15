@@ -23,10 +23,10 @@ run-loadgen:
 	go run ./cmd/loadgen
 
 migrate:
-	./scripts/migrate.sh
+	docker compose -f $(COMPOSE_FILE) run --rm api go run ./cmd/migrate
 
 seed:
-	./scripts/seed.sh
+	docker compose -f $(COMPOSE_FILE) run --rm api go run ./cmd/seed
 
 test:
 	go test ./...
