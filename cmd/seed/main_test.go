@@ -82,6 +82,21 @@ func TestLoadConfigRejectsUnsafeHostWithoutOverride(t *testing.T) {
 	}
 }
 
+func TestLoadConfigRejectsPostgresHostnameWithoutOverride(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+	t.Setenv("DATABASE_URL", "postgres://postgres:postgres@postgres:5432/event_pipeline?sslmode=disable")
+	t.Setenv("SEED_ALLOW_NON_LOCAL_DATABASE", "")
+
+	_, err := loadConfig()
+	if err == nil {
+		t.Fatal("loadConfig() error = nil, want error")
+	}
+
+	if !strings.Contains(err.Error(), `refusing to seed non-local database host "postgres"`) {
+		t.Fatalf("loadConfig() error = %q, want host safety error", err)
+	}
+}
+
 func TestLoadConfigAllowsUnsafeTargetWithExplicitOverride(t *testing.T) {
 	t.Setenv("APP_ENV", "production")
 	t.Setenv("DATABASE_URL", "postgres://postgres:postgres@db.internal:5432/event_pipeline?sslmode=disable")

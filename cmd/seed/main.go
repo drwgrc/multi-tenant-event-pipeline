@@ -147,7 +147,7 @@ func isSafeSeedAppEnv(appEnv string) bool {
 
 func isSafeSeedHost(host string) bool {
 	switch strings.ToLower(strings.TrimSpace(host)) {
-	case "localhost", "127.0.0.1", "::1", "postgres":
+	case "localhost", "127.0.0.1", "::1":
 		return true
 	default:
 		return false
