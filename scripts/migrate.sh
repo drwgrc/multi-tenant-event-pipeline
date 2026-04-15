@@ -1,4 +1,9 @@
 #!/bin/sh
 
-echo "migrations are not implemented yet; this command is a bootstrap placeholder for a later ticket" >&2
-exit 1
+set -eu
+
+if [ "$#" -eq 0 ]; then
+  set -- up
+fi
+
+exec go run ./cmd/migrate "$@"
