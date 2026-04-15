@@ -22,7 +22,7 @@ Update it whenever a milestone meaningfully changes status.
 |---|---|---|
 | Repo scaffold and Go module | complete | Go module, Makefile bootstrap commands, and repository scaffold are committed. |
 | Docker Compose local stack | partial | Compose now includes API, worker, Postgres, and Redis with named volumes, exposed dev ports, health-gated startup, and explicit env wiring; application internals still do not consume the full config contract. |
-| Config loader | not_started | Env parsing and validation. |
+| Config loader | complete | Shared startup config parsing and validation now power `cmd/api` and `cmd/worker`; `REDIS_ADDR` remains a temporary fallback alias behind canonical `REDIS_URL`. |
 | Structured logging | not_started | `slog`, request IDs, worker correlation fields. |
 | Database migrations | not_started | Base schema and seed path. |
 | Seed data | not_started | Demo tenant, source, API key, admin user. |
