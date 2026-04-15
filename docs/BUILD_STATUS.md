@@ -26,7 +26,7 @@ Update it whenever a milestone meaningfully changes status.
 | Structured logging | complete | API and worker now emit JSON `slog` logs; API propagates `X-Request-ID` and worker logs include `worker_id` correlation. |
 | Database migrations | complete | Repo-native migration runner exists and the initial tenants/users/memberships/api_keys/sources schema is committed; later milestones still add jobs, aggregates, and other tables. |
 | Seed data | complete | `make seed` now upserts a deterministic demo tenant, admin user, membership, source, and hashed API key, and prints the raw local-only API key once per seed run. |
-| Health endpoints | partial | Bootstrap `/livez` exists in `cmd/api`; `/readyz` and dependency checks are pending. |
+| Health endpoints | complete | API now exposes JSON `/livez` and `/readyz`; readiness returns `503` when Postgres or Redis is unreachable. |
 | Ingestion API | not_started | `POST /v1/events`. |
 | Event validation | not_started | Batch and event-level validation, partial rejection. |
 | Idempotency | not_started | Request hashing, replay, `409 Conflict`. |
