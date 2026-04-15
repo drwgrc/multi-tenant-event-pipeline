@@ -21,7 +21,7 @@ Update it whenever a milestone meaningfully changes status.
 | Subsystem | Status | Notes |
 |---|---|---|
 | Repo scaffold and Go module | complete | Go module, Makefile bootstrap commands, and repository scaffold are committed. |
-| Docker Compose local stack | partial | Bootstrap compose wiring exists for API, worker, Postgres, and Redis; service internals are still placeholders. |
+| Docker Compose local stack | partial | Compose now includes API, worker, Postgres, and Redis with named volumes, exposed dev ports, health-gated startup, and explicit env wiring; application internals still do not consume the full config contract. |
 | Config loader | not_started | Env parsing and validation. |
 | Structured logging | not_started | `slog`, request IDs, worker correlation fields. |
 | Database migrations | not_started | Base schema and seed path. |
