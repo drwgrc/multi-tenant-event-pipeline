@@ -12,7 +12,7 @@ This repository currently contains the bootstrap scaffold from Issue `#2` plus t
 - local Docker Compose stack for API, worker, Postgres, and Redis
 - bootstrap developer commands in `Makefile`
 
-The business logic, config loader, migrations, seed data, readiness checks, and ingestion pipeline are tracked in later tickets and are not implemented yet.
+The business logic, migrations, seed data, readiness checks, and ingestion pipeline are tracked in later tickets and are not implemented yet.
 
 ## Repository layout
 
@@ -59,7 +59,10 @@ Compose uses named volumes for Postgres and Redis state and injects explicit loc
 APP_ENV=development
 HTTP_ADDR=:8080                # api only
 DATABASE_URL=postgres://postgres:postgres@postgres:5432/event_pipeline?sslmode=disable
-REDIS_ADDR=redis:6379
+REDIS_URL=redis://redis:6379
+JWT_SIGNING_KEY=development-signing-key
+INGEST_MAX_BODY_BYTES=1048576
+INGEST_MAX_BATCH_EVENTS=1000
 ```
 
 The compose file also configures health checks for Postgres and Redis so the `api` and `worker` containers wait for those dependencies before starting.
@@ -67,18 +70,43 @@ The compose file also configures health checks for Postgres and Redis so the `ap
 Run the API directly:
 
 ```bash
+APP_ENV=development \
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
+REDIS_URL=redis://localhost:6379 \
+JWT_SIGNING_KEY=development-signing-key \
 make run-api
 ```
 
 Run the worker directly:
 
 ```bash
+APP_ENV=development \
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
+REDIS_URL=redis://localhost:6379 \
+JWT_SIGNING_KEY=development-signing-key \
 make run-worker
 ```
 
 The bootstrap API currently exposes a minimal liveness endpoint at `http://localhost:8080/livez`.
 
-The application binaries do not consume the full compose env contract yet. The config loader, migrations, seed flow, and readiness checks are tracked in later milestone-0 tickets.
+## Configuration
+
+The bootstrap binaries now load and validate configuration from process environment variables at startup. There is no automatic `.env` loading; use shell exports, inline environment variables, or Compose to provide settings.
+
+Required environment variables:
+
+- `DATABASE_URL`
+- `REDIS_URL` (preferred) or `REDIS_ADDR` as a temporary backward-compatible fallback
+- `JWT_SIGNING_KEY` with at least 16 characters
+
+Development defaults:
+
+- `APP_ENV=development` when unset
+- `HTTP_ADDR=:8080` for the API only when `APP_ENV=development`
+- `INGEST_MAX_BODY_BYTES=1048576`
+- `INGEST_MAX_BATCH_EVENTS=1000`
+
+Invalid or missing configuration causes the binary to exit before serving traffic.
 
 `make migrate` and `make seed` are placeholder commands that fail intentionally until the migration and seed tickets are implemented.
 

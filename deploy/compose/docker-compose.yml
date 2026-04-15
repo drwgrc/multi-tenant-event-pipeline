@@ -10,7 +10,10 @@ services:
       APP_ENV: development
       HTTP_ADDR: ":8080"
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/event_pipeline?sslmode=disable
-      REDIS_ADDR: redis:6379
+      REDIS_URL: redis://redis:6379
+      JWT_SIGNING_KEY: development-signing-key
+      INGEST_MAX_BODY_BYTES: "1048576"
+      INGEST_MAX_BATCH_EVENTS: "1000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -27,7 +30,10 @@ services:
     environment:
       APP_ENV: development
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/event_pipeline?sslmode=disable
-      REDIS_ADDR: redis:6379
+      REDIS_URL: redis://redis:6379
+      JWT_SIGNING_KEY: development-signing-key
+      INGEST_MAX_BODY_BYTES: "1048576"
+      INGEST_MAX_BATCH_EVENTS: "1000"
     depends_on:
       postgres:
         condition: service_healthy
