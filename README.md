@@ -146,6 +146,8 @@ The migration runner reads:
 - `DATABASE_URL` (required)
 - `MIGRATIONS_DIR` (optional, defaults to `migrations`)
 
+The CLI accepts only a single optional command argument (`up`, `down`, or `version`). Extra positional arguments such as `./scripts/migrate.sh down 1` are rejected rather than treated as a step rollback.
+
 For local development with Docker Compose, start Postgres first and then run migrations against `localhost:5432` from the repo checkout:
 
 ```bash

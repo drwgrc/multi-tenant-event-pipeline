@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/drwgrc/multi-tenant-event-pipeline/internal/observability"
 	"github.com/golang-migrate/migrate/v4"
@@ -16,6 +17,7 @@ import (
 )
 
 const defaultMigrationsDir = "migrations"
+const usageText = "usage: go run ./cmd/migrate [up|down|version]"
 
 type migrateConfig struct {
 	DatabaseURL   string
@@ -24,6 +26,13 @@ type migrateConfig struct {
 
 func main() {
 	logger := observability.NewLogger("migrate")
+
+	command, err := parseCommand(os.Args)
+	if err != nil {
+		logCommandParseError(logger, os.Args[1:], err)
+		fmt.Fprintln(os.Stderr, usageText)
+		os.Exit(2)
+	}
 
 	cfg, err := loadConfig()
 	if err != nil {
@@ -52,11 +61,6 @@ func main() {
 		}
 	}()
 
-	command := "up"
-	if len(os.Args) > 1 {
-		command = os.Args[1]
-	}
-
 	switch command {
 	case "up":
 		if err := runUp(logger, runner); err != nil {
@@ -75,9 +79,43 @@ func main() {
 		}
 	default:
 		logger.Error("unknown migration command", slog.String("command", command))
-		fmt.Fprintln(os.Stderr, "usage: go run ./cmd/migrate [up|down|version]")
+		fmt.Fprintln(os.Stderr, usageText)
 		os.Exit(2)
 	}
+}
+
+func parseCommand(args []string) (string, error) {
+	switch len(args) {
+	case 0, 1:
+		return "up", nil
+	case 2:
+		command := args[1]
+		switch command {
+		case "up", "down", "version":
+			return command, nil
+		default:
+			return "", fmt.Errorf("unknown migration command %q", command)
+		}
+	default:
+		return "", fmt.Errorf("unexpected trailing arguments: %s", strings.Join(args[2:], " "))
+	}
+}
+
+func logCommandParseError(logger *slog.Logger, args []string, err error) {
+	if len(args) == 0 {
+		logger.Error("parse migration command", slog.Any("error", err))
+		return
+	}
+
+	attrs := []any{
+		slog.Any("error", err),
+		slog.String("command", args[0]),
+	}
+	if len(args) > 1 {
+		attrs = append(attrs, slog.Any("extra_args", args[1:]))
+	}
+
+	logger.Error("parse migration command", attrs...)
 }
 
 func loadConfig() (migrateConfig, error) {
