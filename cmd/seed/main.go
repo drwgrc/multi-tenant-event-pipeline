@@ -31,7 +31,9 @@ const (
 )
 
 type seedConfig struct {
-	DatabaseURL string
+	AppEnv        string
+	DatabaseURL   string
+	ForceNonLocal bool
 }
 
 type seedResult struct {
@@ -92,7 +94,13 @@ func main() {
 
 func loadConfig() (seedConfig, error) {
 	cfg := seedConfig{
-		DatabaseURL: strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		AppEnv:        strings.TrimSpace(os.Getenv("APP_ENV")),
+		DatabaseURL:   strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		ForceNonLocal: strings.EqualFold(strings.TrimSpace(os.Getenv("SEED_ALLOW_NON_LOCAL_DATABASE")), "true"),
+	}
+
+	if cfg.AppEnv == "" {
+		cfg.AppEnv = "development"
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -104,7 +112,46 @@ func loadConfig() (seedConfig, error) {
 		return seedConfig{}, errors.New("DATABASE_URL must be a valid URL")
 	}
 
+	if err := validateSeedTarget(cfg, parsed); err != nil {
+		return seedConfig{}, err
+	}
+
 	return cfg, nil
+}
+
+func validateSeedTarget(cfg seedConfig, parsed *url.URL) error {
+	if cfg.ForceNonLocal {
+		return nil
+	}
+
+	if !isSafeSeedAppEnv(cfg.AppEnv) {
+		return fmt.Errorf("refusing to seed when APP_ENV=%q; set SEED_ALLOW_NON_LOCAL_DATABASE=true to override intentionally", cfg.AppEnv)
+	}
+
+	host := parsed.Hostname()
+	if !isSafeSeedHost(host) {
+		return fmt.Errorf("refusing to seed non-local database host %q; set SEED_ALLOW_NON_LOCAL_DATABASE=true to override intentionally", host)
+	}
+
+	return nil
+}
+
+func isSafeSeedAppEnv(appEnv string) bool {
+	switch strings.ToLower(strings.TrimSpace(appEnv)) {
+	case "development", "dev", "local", "test":
+		return true
+	default:
+		return false
+	}
+}
+
+func isSafeSeedHost(host string) bool {
+	switch strings.ToLower(strings.TrimSpace(host)) {
+	case "localhost", "127.0.0.1", "::1", "postgres":
+		return true
+	default:
+		return false
+	}
 }
 
 func runSeed(ctx context.Context, db *sql.DB) (seedResult, error) {

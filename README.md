@@ -168,6 +168,8 @@ make seed
 
 `make seed` also runs as a one-off Compose container, so it talks to Postgres over the Docker network instead of relying on a host-installed or host-routed database connection.
 
+The seed binary refuses to run against non-local or non-development targets by default. To seed any other database intentionally, set `SEED_ALLOW_NON_LOCAL_DATABASE=true` for that invocation.
+
 The seed flow is deterministic and rerunnable. It upserts the same local-only records each time:
 
 - tenant slug: `demo`
