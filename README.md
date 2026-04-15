@@ -4,15 +4,16 @@ Bootstrap repository for a Go backend that ingests tenant-scoped event batches, 
 
 ## Current state
 
-This repository currently contains the bootstrap scaffold from Issue `#2` plus the local infrastructure stack from Issue `#3`:
+This repository currently contains the bootstrap scaffold from Issue `#2`, the local infrastructure stack from Issue `#3`, and the initial tenancy/auth schema work from Issue `#6`:
 
 - Go module initialization
 - command entrypoints for `api`, `worker`, and `loadgen`
 - internal package layout for planned subsystems
 - local Docker Compose stack for API, worker, Postgres, and Redis
+- migration runner plus initial `tenants`, `users`, `memberships`, `api_keys`, and `sources` schema
 - bootstrap developer commands in `Makefile`
 
-The business logic, migrations, seed data, readiness checks, and ingestion pipeline are tracked in later tickets and are not implemented yet.
+The ingestion pipeline, seed data, readiness checks, and business logic are tracked in later tickets and are not implemented yet.
 
 ## Repository layout
 
@@ -121,7 +122,44 @@ The API wraps every request with request correlation middleware:
 
 The worker boot path now includes a process-level `worker_id` field on startup and heartbeat logs so later job-processing code can reuse the same correlation field.
 
-`make migrate` and `make seed` are placeholder commands that fail intentionally until the migration and seed tickets are implemented.
+## Database migrations
+
+Run the current schema migrations from the repository root:
+
+```bash
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
+make migrate
+```
+
+`make migrate` defaults to `up`. To inspect or roll back the current migration state, pass a command through to the runner:
+
+```bash
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
+./scripts/migrate.sh version
+
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
+./scripts/migrate.sh down
+```
+
+The migration runner reads:
+
+- `DATABASE_URL` (required)
+- `MIGRATIONS_DIR` (optional, defaults to `migrations`)
+
+The CLI accepts only a single optional command argument (`up`, `down`, or `version`). Extra positional arguments such as `./scripts/migrate.sh down 1` are rejected rather than treated as a step rollback.
+
+For local development with Docker Compose, start Postgres first and then run migrations against `localhost:5432` from the repo checkout:
+
+```bash
+docker compose -f deploy/compose/docker-compose.yml up -d postgres
+
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
+make migrate
+```
+
+For deploy environments, run the same `go run ./cmd/migrate up` command as a release step before starting or updating the API and worker processes. The container build now includes the migration files so the same command can be executed from the built artifact as long as `DATABASE_URL` is set.
+
+`make seed` is still a placeholder command until the seed-data ticket is implemented.
 
 ## Roadmap references
 
