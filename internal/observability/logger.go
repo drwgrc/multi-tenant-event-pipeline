@@ -40,14 +40,6 @@ func RequestIDAttr(requestID string) slog.Attr {
 	return slog.String("request_id", requestID)
 }
 
-func TenantIDAttr(tenantID string) slog.Attr {
-	return slog.String("tenant_id", tenantID)
-}
-
-func JobIDAttr(jobID string) slog.Attr {
-	return slog.String("job_id", jobID)
-}
-
 func WorkerIDAttr(workerID string) slog.Attr {
 	return slog.String("worker_id", workerID)
 }

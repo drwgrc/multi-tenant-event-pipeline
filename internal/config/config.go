@@ -6,26 +6,19 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 )
 
 const (
-	defaultAppEnv             = "development"
-	defaultHTTPAddr           = ":8080"
-	defaultIngestMaxBodyBytes = int64(1_048_576)
-	defaultIngestMaxBatchSize = 1000
-	minJWTSigningKeyLength    = 16
+	defaultAppEnv   = "development"
+	defaultHTTPAddr = ":8080"
 )
 
 type Config struct {
-	AppEnv               string
-	DatabaseURL          string
-	RedisURL             string
-	JWTSigningKey        string
-	HTTPAddr             string
-	IngestMaxBodyBytes   int64
-	IngestMaxBatchEvents int
+	AppEnv      string
+	DatabaseURL string
+	RedisURL    string
+	HTTPAddr    string
 }
 
 type target string
@@ -45,12 +38,9 @@ func LoadWorker() (Config, error) {
 
 func load(kind target) (Config, error) {
 	cfg := Config{
-		AppEnv:               stringValue("APP_ENV", defaultAppEnv),
-		DatabaseURL:          strings.TrimSpace(os.Getenv("DATABASE_URL")),
-		RedisURL:             redisValue(),
-		JWTSigningKey:        strings.TrimSpace(os.Getenv("JWT_SIGNING_KEY")),
-		IngestMaxBodyBytes:   int64Value("INGEST_MAX_BODY_BYTES", defaultIngestMaxBodyBytes),
-		IngestMaxBatchEvents: intValue("INGEST_MAX_BATCH_EVENTS", defaultIngestMaxBatchSize),
+		AppEnv:      stringValue("APP_ENV", defaultAppEnv),
+		DatabaseURL: strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		RedisURL:    redisValue(),
 	}
 
 	if kind == targetAPI {
@@ -64,21 +54,6 @@ func load(kind target) (Config, error) {
 
 	validationErrors = append(validationErrors, validateRequiredURL("DATABASE_URL", cfg.DatabaseURL)...)
 	validationErrors = append(validationErrors, validateRequiredURL("REDIS_URL", cfg.RedisURL)...)
-
-	switch {
-	case cfg.JWTSigningKey == "":
-		validationErrors = append(validationErrors, "JWT_SIGNING_KEY is required")
-	case len(cfg.JWTSigningKey) < minJWTSigningKeyLength:
-		validationErrors = append(validationErrors, fmt.Sprintf("JWT_SIGNING_KEY must be at least %d characters", minJWTSigningKeyLength))
-	}
-
-	if cfg.IngestMaxBodyBytes <= 0 {
-		validationErrors = append(validationErrors, "INGEST_MAX_BODY_BYTES must be greater than 0")
-	}
-
-	if cfg.IngestMaxBatchEvents <= 0 {
-		validationErrors = append(validationErrors, "INGEST_MAX_BATCH_EVENTS must be greater than 0")
-	}
 
 	if kind == targetAPI {
 		switch {
@@ -103,34 +78,6 @@ func stringValue(key, fallback string) string {
 	}
 
 	return value
-}
-
-func int64Value(key string, fallback int64) int64 {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return fallback
-	}
-
-	parsed, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		return -1
-	}
-
-	return parsed
-}
-
-func intValue(key string, fallback int) int {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return fallback
-	}
-
-	parsed, err := strconv.Atoi(value)
-	if err != nil {
-		return -1
-	}
-
-	return parsed
 }
 
 func redisValue() string {

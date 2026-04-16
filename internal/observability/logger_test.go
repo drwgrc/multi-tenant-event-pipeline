@@ -31,8 +31,6 @@ func TestRequestIDContextRoundTrip(t *testing.T) {
 
 func TestLoggingAttrs(t *testing.T) {
 	assertAttr(t, RequestIDAttr("req-123"), "request_id", "req-123")
-	assertAttr(t, TenantIDAttr("tenant-123"), "tenant_id", "tenant-123")
-	assertAttr(t, JobIDAttr("job-123"), "job_id", "job-123")
 	assertAttr(t, WorkerIDAttr("worker-123"), "worker_id", "worker-123")
 
 	durationAttr := DurationAttr(1500 * time.Millisecond)
