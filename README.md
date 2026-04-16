@@ -1,20 +1,63 @@
 # Multi-tenant Event Pipeline
 
-Bootstrap repository for a Go backend that ingests tenant-scoped event batches, processes them asynchronously, and serves analytics from rollups.
+Go backend for a multi-tenant event ingestion and analytics system. The intended system accepts tenant-scoped event batches over HTTP, enforces idempotency, processes events asynchronously, and serves analytics from rollups instead of raw-event scans.
 
-## Current state
+## Current status
 
-This repository currently contains the bootstrap scaffold from Issue `#2`, the local infrastructure stack from Issue `#3`, the initial tenancy/auth schema work from Issue `#6`, and deterministic bootstrap seed data from Issue `#7`:
+The repository is still in the bootstrap phase. These pieces are implemented today:
 
-- Go module initialization
-- command entrypoints for `api`, `worker`, and `loadgen`
-- internal package layout for planned subsystems
+- Go module and repository scaffold
+- command entrypoints for `api`, `worker`, `loadgen`, `migrate`, and `seed`
 - local Docker Compose stack for API, worker, Postgres, and Redis
-- migration runner plus initial `tenants`, `users`, `memberships`, `api_keys`, and `sources` schema
-- bootstrap developer commands in `Makefile`
+- shared config loading and validation
+- structured JSON logging and request ID propagation
+- initial tenancy and auth schema for `tenants`, `users`, `memberships`, `api_keys`, and `sources`
 - deterministic local seed flow for one demo tenant, admin user, source, and API key
+- `GET /livez` and `GET /readyz`
 
-The ingestion pipeline, readiness checks, and business logic are tracked in later tickets and are not implemented yet.
+These are still planned and not implemented yet:
+
+- `POST /v1/events`
+- ingestion validation and idempotency behavior
+- jobs, worker processing, retries, and dead letters
+- aggregate rollups and analytics endpoints
+- login, tenant admin APIs, and demo flow
+
+## Benchmark target
+
+The PRD target for this system is:
+
+- `500 events/sec` sustained end-to-end
+- single `2 vCPU / 4 GB / 40 GB` benchmark box
+- `25-event` batches during benchmarking
+- ingestion `p95 < 200 ms`
+- aggregation lag `p95 < 5 seconds`
+
+This repository does not meet or prove that target yet. Benchmark evidence and performance reports will land in later milestones.
+
+## Architecture sketch
+
+### Write path
+
+1. `POST /v1/events` authenticates an ingestion API key.
+2. The API validates the request and computes a stable request hash.
+3. The service enforces idempotency on `(tenant_id, idempotency_key)`.
+4. One transaction persists the ingestion request, accepted raw events, rejected events, and a `process_ingestion` job.
+5. The API returns `202 Accepted` and stores a response snapshot for same-hash replay behavior.
+
+### Async path
+
+1. A worker claims a queued `process_ingestion` job.
+2. The worker loads the ingestion request and associated events.
+3. The worker enriches supported dimensions.
+4. The worker upserts aggregate buckets.
+5. The worker marks the ingestion and job as complete, or retries/dead-letters on failure.
+
+### Read path
+
+- Raw event browsing reads from `events`.
+- Analytics reads from `aggregate_buckets`.
+- Ops and retry inspection read from `jobs` and `dead_letters`.
 
 ## Repository layout
 
@@ -27,7 +70,9 @@ scripts/            developer helper scripts
 docs/               scope, delivery plan, and build status
 ```
 
-## Developer commands
+## Local development
+
+Common commands:
 
 ```bash
 make up
@@ -41,25 +86,23 @@ make seed
 make test
 ```
 
-## Bootstrap usage
-
 Start the local stack:
 
 ```bash
 make up
 ```
 
-The compose stack starts:
+The Compose stack starts:
 
 - `api` on `http://localhost:8080`
 - `postgres` on `localhost:5432`
 - `redis` on `localhost:6379`
 
-Compose uses named volumes for Postgres and Redis state and injects explicit local-development environment variables into the `api` and `worker` containers:
+Compose injects local-development settings into the API and worker containers:
 
 ```text
 APP_ENV=development
-HTTP_ADDR=:8080                # api only
+HTTP_ADDR=:8080
 DATABASE_URL=postgres://postgres:postgres@postgres:5432/event_pipeline?sslmode=disable
 REDIS_URL=redis://redis:6379
 JWT_SIGNING_KEY=development-signing-key
@@ -67,7 +110,7 @@ INGEST_MAX_BODY_BYTES=1048576
 INGEST_MAX_BATCH_EVENTS=1000
 ```
 
-The compose file also configures health checks for Postgres and Redis so the `api` and `worker` containers wait for those dependencies before starting.
+The Compose file also waits for Postgres and Redis health before starting the application containers.
 
 Run the API directly:
 
@@ -89,91 +132,19 @@ JWT_SIGNING_KEY=development-signing-key \
 make run-worker
 ```
 
-The bootstrap API currently exposes:
+## Bootstrap flow
 
-- `GET /livez` for process liveness
-- `GET /readyz` for readiness against Postgres and Redis
-
-Both endpoints return machine-readable JSON. `/readyz` returns `200 OK` only when both dependencies are reachable and `503 Service Unavailable` when either check fails.
-
-## Configuration
-
-The bootstrap binaries now load and validate configuration from process environment variables at startup. There is no automatic `.env` loading; use shell exports, inline environment variables, or Compose to provide settings.
-
-Required environment variables:
-
-- `DATABASE_URL`
-- `REDIS_URL` (preferred) or `REDIS_ADDR` as a temporary backward-compatible fallback
-- `JWT_SIGNING_KEY` with at least 16 characters
-
-Development defaults:
-
-- `APP_ENV=development` when unset
-- `HTTP_ADDR=:8080` for the API only when `APP_ENV=development`
-- `INGEST_MAX_BODY_BYTES=1048576`
-- `INGEST_MAX_BATCH_EVENTS=1000`
-
-Invalid or missing configuration causes the binary to exit before serving traffic.
-
-## Logging and request correlation
-
-The bootstrap API and worker now emit structured JSON logs via Go's standard-library `slog` package. Each log line includes a `service` field so API and worker output can be separated easily in Compose or aggregated logs.
-
-The API wraps every request with request correlation middleware:
-
-- incoming `X-Request-ID` is preserved when provided
-- otherwise the API generates a new opaque request ID
-- the resolved request ID is echoed back in the response header
-- request completion logs include `request_id`, `method`, `path`, `status`, `remote_addr`, and `duration_ms`
-
-The worker boot path now includes a process-level `worker_id` field on startup and heartbeat logs so later job-processing code can reuse the same correlation field.
-
-## Database migrations
-
-Run the current schema migrations from the repository root:
+Apply the current schema:
 
 ```bash
 make migrate
 ```
 
-`make migrate` runs inside the Compose network, so it uses the container-local database URL (`postgres://postgres:postgres@postgres:5432/event_pipeline?sslmode=disable`) instead of a host `localhost` connection.
-
-`make migrate` defaults to `up`. To inspect or roll back the current migration state, pass a command through to the runner:
-
-```bash
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
-./scripts/migrate.sh version
-
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
-./scripts/migrate.sh down
-```
-
-The migration runner reads:
-
-- `DATABASE_URL` (required)
-- `MIGRATIONS_DIR` (optional, defaults to `migrations`)
-
-The CLI accepts only a single optional command argument (`up`, `down`, or `version`). Extra positional arguments such as `./scripts/migrate.sh down 1` are rejected rather than treated as a step rollback.
-
-For local development, `make migrate` is the default path. It runs as a one-off container against the Compose Postgres service:
-
-```bash
-make migrate
-```
-
-For deploy environments, run the same `go run ./cmd/migrate up` command as a release step before starting or updating the API and worker processes. The container build now includes the migration files so the same command can be executed from the built artifact as long as `DATABASE_URL` is set.
-
-## Seed data
-
-After migrations are applied, seed the local demo records from the repository root:
+Seed the local demo records:
 
 ```bash
 make seed
 ```
-
-`make seed` also runs as a one-off Compose container, so it talks to Postgres over the Docker network instead of relying on a host-installed or host-routed database connection.
-
-The seed binary refuses to run against non-local or non-development targets by default. To seed any other database intentionally, set `SEED_ALLOW_NON_LOCAL_DATABASE=true` for that invocation.
 
 The seed flow is deterministic and rerunnable. It upserts the same local-only records each time:
 
@@ -185,9 +156,37 @@ The seed flow is deterministic and rerunnable. It upserts the same local-only re
 - source name: `demo-web`
 - API key name: `demo-ingest`
 
-`make seed` prints the raw seeded API key once during the run. The database stores only the API key hash plus the prefix (`evt_demo_loc`), not the raw secret.
+`make seed` prints the raw seeded API key once during the run. The database stores only the key hash plus the prefix (`evt_demo_loc`), not the raw secret.
 
-This bootstrap data exists so later tickets can implement `POST /v1/auth/login` and ingestion against a real tenant without adding ad hoc setup steps. There is still no login or ingestion API in the repository yet.
+This bootstrap data exists so later tickets can add login and ingestion against a real tenant without extra manual setup. Those APIs are not available yet.
+
+## Current API surface
+
+The bootstrap API currently exposes:
+
+- `GET /livez` for process liveness
+- `GET /readyz` for readiness against Postgres and Redis
+
+Both endpoints return JSON. `/readyz` returns `200 OK` only when both dependencies are reachable and `503 Service Unavailable` when either check fails.
+
+## Configuration
+
+The binaries read configuration from environment variables at startup. There is no automatic `.env` loading.
+
+Required:
+
+- `DATABASE_URL`
+- `REDIS_URL` or temporary fallback `REDIS_ADDR`
+- `JWT_SIGNING_KEY` with at least 16 characters
+
+Development defaults:
+
+- `APP_ENV=development` when unset
+- `HTTP_ADDR=:8080` for the API when `APP_ENV=development`
+- `INGEST_MAX_BODY_BYTES=1048576`
+- `INGEST_MAX_BATCH_EVENTS=1000`
+
+Invalid or missing configuration causes startup to fail before serving traffic.
 
 ## Roadmap references
 
