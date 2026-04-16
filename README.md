@@ -89,7 +89,12 @@ JWT_SIGNING_KEY=development-signing-key \
 make run-worker
 ```
 
-The bootstrap API currently exposes a minimal liveness endpoint at `http://localhost:8080/livez`.
+The bootstrap API currently exposes:
+
+- `GET /livez` for process liveness
+- `GET /readyz` for readiness against Postgres and Redis
+
+Both endpoints return machine-readable JSON. `/readyz` returns `200 OK` only when both dependencies are reachable and `503 Service Unavailable` when either check fails.
 
 ## Configuration
 
