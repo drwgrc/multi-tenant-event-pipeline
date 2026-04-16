@@ -105,9 +105,6 @@ APP_ENV=development
 HTTP_ADDR=:8080
 DATABASE_URL=postgres://postgres:postgres@postgres:5432/event_pipeline?sslmode=disable
 REDIS_URL=redis://redis:6379
-JWT_SIGNING_KEY=development-signing-key
-INGEST_MAX_BODY_BYTES=1048576
-INGEST_MAX_BATCH_EVENTS=1000
 ```
 
 The Compose file also waits for Postgres and Redis health before starting the application containers.
@@ -118,7 +115,6 @@ Run the API directly:
 APP_ENV=development \
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
 REDIS_URL=redis://localhost:6379 \
-JWT_SIGNING_KEY=development-signing-key \
 make run-api
 ```
 
@@ -128,7 +124,6 @@ Run the worker directly:
 APP_ENV=development \
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/event_pipeline?sslmode=disable \
 REDIS_URL=redis://localhost:6379 \
-JWT_SIGNING_KEY=development-signing-key \
 make run-worker
 ```
 
@@ -177,14 +172,11 @@ Required:
 
 - `DATABASE_URL`
 - `REDIS_URL` or temporary fallback `REDIS_ADDR`
-- `JWT_SIGNING_KEY` with at least 16 characters
 
 Development defaults:
 
 - `APP_ENV=development` when unset
 - `HTTP_ADDR=:8080` for the API when `APP_ENV=development`
-- `INGEST_MAX_BODY_BYTES=1048576`
-- `INGEST_MAX_BATCH_EVENTS=1000`
 
 Invalid or missing configuration causes startup to fail before serving traffic.
 

@@ -62,9 +62,6 @@ func NewLivenessHandler() http.Handler {
 
 func NewReadinessHandler(timeout time.Duration, database Checker, redis Checker) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), timeout)
-		defer cancel()
-
 		response := readinessResponse{
 			Status: "ok",
 			Database: componentStatus{
@@ -77,14 +74,18 @@ func NewReadinessHandler(timeout time.Duration, database Checker, redis Checker)
 
 		statusCode := http.StatusOK
 
-		if err := database.Check(ctx); err != nil {
+		dbCtx, cancelDB := context.WithTimeout(r.Context(), timeout)
+		defer cancelDB()
+		if err := database.Check(dbCtx); err != nil {
 			response.Status = "error"
 			response.Database.Status = "error"
 			response.Database.Error = err.Error()
 			statusCode = http.StatusServiceUnavailable
 		}
 
-		if err := redis.Check(ctx); err != nil {
+		redisCtx, cancelRedis := context.WithTimeout(r.Context(), timeout)
+		defer cancelRedis()
+		if err := redis.Check(redisCtx); err != nil {
 			response.Status = "error"
 			response.Redis.Status = "error"
 			response.Redis.Error = err.Error()
