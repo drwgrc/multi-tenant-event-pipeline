@@ -49,7 +49,7 @@ Update it whenever a milestone meaningfully changes status.
 | Benchmarks and perf reports | not_started | pprof, EXPLAIN, bottlenecks. |
 | Demo flow | not_started | `/demo`, status, replay sample. |
 | Deployment | not_started | Public demo deployment and docs. |
-| README and docs polish | partial | Bootstrap README exists; architecture, benchmark, and runbook content are still pending. |
+| README and docs polish | partial | Bootstrap README now covers system summary, benchmark target, architecture sketch, and local bootstrap flow; broader runbooks, benchmark evidence, and later architecture notes are still pending. |
 
 ## Update rules
 When updating this file:
